@@ -36,6 +36,25 @@ const plantas = [
     },
 ];
 
+const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+    }
+
+    const blob = new Blob(byteArrays, { type: contentType });
+    return blob;
+}
 
 const PantallaPlantas = ({ route }) => {
     const [photoUploaded, setPhotoUploaded] = useState(false); // Usa esto para controlar la visualización del mensaje de éxito
@@ -56,7 +75,22 @@ const PantallaPlantas = ({ route }) => {
 
         setPhotoUploaded(true); // Se establece en true cuando la foto se carga correctamente
 
-        setImage(result.assets[0].base64);
+        const imageBlob = b64toBlob(result.assets[0].base64);
+
+        const file = new File([imageBlob], "File name", { type: "image/png" })
+
+        const data = new FormData().append('file', file);
+
+        fetch('tu api', {
+            method: 'POST',
+            body: data,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            }
+        })
+            .then(response => response.json())
+            .then(data => (console.log(data)))
+            .catch(error => console.log('error', error));
     };
     const { plantaNombre } = route.params;
     const planta = plantas.find(p => p.name === plantaNombre);
