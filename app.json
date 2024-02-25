@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "proyecto1",
+    "jsEngine": "jsc",
     "slug": "proyecto1",
     "version": "1.0.0",
     "orientation": "portrait",
