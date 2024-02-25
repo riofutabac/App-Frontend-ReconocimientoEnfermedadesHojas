@@ -12,7 +12,6 @@ import { ScrollView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 
 
-
 const { height } = Dimensions.get('window');
 
 const plantas = [
@@ -68,30 +67,33 @@ const PantallaPlantas = ({ route }) => {
             quality: 1,
             base64: true,
         });
-
+    
         if (result.cancelled) {
             return;
         }
+    
+        setImage(result.base64); 
 
-        setPhotoUploaded(true); // Se establece en true cuando la foto se carga correctamente
-
-        const imageBlob = b64toBlob(result.assets[0].base64);
-
-        const file = new File([imageBlob], "File name", { type: "image/png" })
-
-        const data = new FormData().append('file', file);
-
-        fetch('tu api', {
+     
+        const data = new FormData();
+        data.append('file', `data:image/jpeg;base64,${result.base64}`);
+        data.append('planta', plantaNombre); 
+    
+        // Envío de la solicitud a la API
+        fetch('/predict', {
             method: 'POST',
             body: data,
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            }
         })
             .then(response => response.json())
-            .then(data => (console.log(data)))
-            .catch(error => console.log('error', error));
+            .then(data => {
+                console.log('Success:', data);
+                setPhotoUploaded(true);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
     };
+
     const { plantaNombre } = route.params;
     const planta = plantas.find(p => p.name === plantaNombre);
 
