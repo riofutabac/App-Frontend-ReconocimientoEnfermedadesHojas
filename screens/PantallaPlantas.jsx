@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; 
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -30,7 +30,7 @@ const plantas = [
     },
     {
         id: 3,
-        name: 'Tomate',     
+        name: 'Tomate',
         image: require('../assets/avatars/tomate.png'),
         backgroundColor: "#fabfb7",
     },
@@ -39,6 +39,7 @@ const plantas = [
 
 const PantallaPlantas = ({ route }) => {
     const [photoUploaded, setPhotoUploaded] = useState(false); // Usa esto para controlar la visualización del mensaje de éxito
+    const [image, setImage] = useState(null); // Usa esto para guardar la imagen seleccionada [1
 
     const takePhotoOrSelectFromGallery = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -46,11 +47,16 @@ const PantallaPlantas = ({ route }) => {
             allowsEditing: false,
             aspect: [4, 3],
             quality: 1,
+            base64: true,
         });
 
-        if (!result.cancelled) {
-            setPhotoUploaded(true); // Se establece en true cuando la foto se carga correctamente
+        if (result.cancelled) {
+            return;
         }
+
+        setPhotoUploaded(true); // Se establece en true cuando la foto se carga correctamente
+
+        setImage(result.assets[0].base64);
     };
     const { plantaNombre } = route.params;
     const planta = plantas.find(p => p.name === plantaNombre);
@@ -58,7 +64,7 @@ const PantallaPlantas = ({ route }) => {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
             <View style={styles.container}>
-     
+
                 <View style={[styles.header, { backgroundColor: planta ? planta.backgroundColor : '#DCE7D6' }]}>
                     <View style={styles.headerContent}>
                         <Text style={[styles.text, styles.headerText]}>{plantaNombre}</Text>
@@ -88,14 +94,18 @@ const PantallaPlantas = ({ route }) => {
                             <Text style={styles.detectedDiseaseTitle}>Enfermedad Dectectada</Text>
                         </View>
                         <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.photoButton} onPress={takePhotoOrSelectFromGallery}>
-                            <Text style={styles.photoButtonText}>Elegir Foto</Text>
-                        </TouchableOpacity>
-                        {photoUploaded && (
+                            <TouchableOpacity style={styles.photoButton} onPress={takePhotoOrSelectFromGallery}>
+                                <Text style={styles.photoButtonText}>Elegir Foto</Text>
+                            </TouchableOpacity>
+                            {photoUploaded && (
                                 <View style={styles.successMessageContainer}>
                                     <Text style={styles.successMessageText}>Foto cargada con éxito</Text>
                                 </View>
                             )}
+                            <Image
+                                source={{ uri: 'data:image/jpeg;base64,' + image }}
+                                style={{ width: 200, height: 200 }}
+                            />
                         </View>
                     </View>
                 </ScrollView>
@@ -107,26 +117,26 @@ const PantallaPlantas = ({ route }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-     
+
     },
     successMessageContainer: {
-        marginTop: 10, 
+        marginTop: 10,
         alignItems: 'center',
     },
     successMessageText: {
         fontSize: 16,
-        color: '#2ecc71', 
+        color: '#2ecc71',
     },
-   
+
     header: {
-        height: height * 0.35, 
+        height: height * 0.35,
         justifyContent: 'space-between',
         alignItems: 'center',
         flexDirection: 'row',
-        paddingHorizontal: 20, 
+        paddingHorizontal: 20,
         borderBottomLeftRadius: 50,
-        backgroundColor: '#DCE7D6', 
-        shadowColor: '#000', 
+        backgroundColor: '#DCE7D6',
+        shadowColor: '#000',
         shadowOffset: {
             width: 0,
             height: 2,
@@ -140,21 +150,21 @@ const styles = StyleSheet.create({
         paddingTop: 20,
     },
     headerText: {
-        fontSize: 32, 
+        fontSize: 32,
         fontWeight: 'bold',
-        color: '#333', 
+        color: '#333',
         marginBottom: 5,
     },
     plantaImage: {
-        width: 120, 
-        height: 120, 
+        width: 120,
+        height: 120,
         resizeMode: 'contain',
     },
     text: {
         fontSize: 20,
-        marginBottom: 10, 
+        marginBottom: 10,
     },
-    informationContainer: { 
+    informationContainer: {
         padding: 20,
         justifyContent: 'space-between',
 
@@ -182,9 +192,9 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     predictionTitle: {
-        fontSize: 17, 
+        fontSize: 17,
         fontWeight: 'bold',
-        color: '#333', 
+        color: '#333',
         marginBottom: 5,
     },
     detectedDiseaseTitle: {
@@ -207,7 +217,7 @@ const styles = StyleSheet.create({
     },
     percentageContainer: {
         alignItems: 'center',
-        marginBottom: -10, 
+        marginBottom: -10,
     },
     percentageText: {
         fontSize: 18,
@@ -224,12 +234,12 @@ const styles = StyleSheet.create({
     },
     genericTextContainer: {
         flex: 1,
-        marginBottom: 20, 
+        marginBottom: 20,
     },
     scrollView: {
         flex: 1,
     },
-    
+
 });
 
 export default PantallaPlantas;
