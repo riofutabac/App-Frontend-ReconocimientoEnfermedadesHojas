@@ -10,9 +10,8 @@ import {
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
-import * as base64 from 'base-64';
+import { encode as atob } from 'base-64';
 import axios from 'axios';
-
 
 
 const { height } = Dimensions.get('window');
@@ -40,7 +39,7 @@ const plantas = [
 
 
 const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
-    const byteCharacters = base64.atob(b64Data);
+    const byteCharacters = atob(b64Data);
     const byteArrays = [];
 
     for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
@@ -65,7 +64,7 @@ const PantallaPlantas = ({ route }) => {
 
     useEffect(() => {
         (async () => {
-            const  galleryStatus  = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            const galleryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
             setHasGalleryPermission(galleryStatus.status === 'granted');
         })();
     }, []);
@@ -73,38 +72,39 @@ const PantallaPlantas = ({ route }) => {
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: false,
-          aspect: [4, 3],
-          quality: 1,
-          base64: true,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: false,
+            aspect: [4, 3],
+            quality: 1,
+            base64: true,
         });
-    
-        if (!result.cancelled) {
-            console.log(result);
-            const imageBlob = b64toBlob(result.base64, 'image/jpeg');
 
-            const formData = new FormData();
+        if (result.cancelled) {
+            return;
+        }
 
-            formData.append('file', imageBlob, 'image.jpg');
-            formData.append('planta', route.params.plantaNombre.toLowerCase());
-    
-            try {
-                const response = await axios.post('http://192.168.100.132:5000/predict/', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-                console.log(response.data);
-   
-            } catch (error) {
-                console.error('Error al enviar la imagen:', error);
-            }
-        } else {
-            console.error('No se seleccionó ninguna imagen o la conversión a base64 falló.');
+        setImage(result.assets[0].base64);
+
+        const imageBlob = b64toBlob(result.assets[0].base64, 'image/jpeg');
+
+        const file = new File([imageBlob], 'image.jpg', { type: 'image/jpeg' });
+
+        const formData = new FormData();
+
+        formData.append('file', file);
+        formData.append('planta', route.params.plantaNombre.toLowerCase());
+
+        try {
+            const response = await axios.post('http://192.168.100.132:5000/predict/', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+        } catch (error) {
+            console.error('Error al enviar la imagen:', error);
         }
     };
-    
+
     const { plantaNombre } = route.params;
     const planta = plantas.find(p => p.name === plantaNombre);
 
@@ -143,10 +143,10 @@ const PantallaPlantas = ({ route }) => {
                         <View style={styles.buttonContainer}>
                             <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
                                 <Text style={styles.photoButtonText}>Elegir Foto</Text>
-                                
+
                             </TouchableOpacity>
                             <Image
-                                source={{ uri: 'data:image/jpeg;base64,' + image  }}
+                                source={{ uri: 'data:image/jpeg;base64,' + image }}
                                 style={{ width: 200, height: 200 }}
                             />
                         </View>
