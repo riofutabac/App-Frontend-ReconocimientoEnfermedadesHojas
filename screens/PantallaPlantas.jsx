@@ -38,6 +38,39 @@ const plantas = [
 ];
 
 
+const sendFileToAPI = async (selectedFileUri, planta) => {
+
+  const formData = new FormData();
+  
+  formData.append('file', {
+    uri: selectedFileUri,
+    type: 'image/jpeg', 
+    name: 'photo.jpg', 
+  });
+  formData.append('planta', planta);
+
+  try {
+    const response = await axios({
+      method: 'post',
+      url: 'http://192.168.100.132:8000/predict/', // Asegúrate de que la URL es correcta y apunta al endpoint adecuado
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data', // Esto es importante para el correcto procesamiento del archivo en el servidor
+      },
+    });
+
+    if (response.status === 200) {
+      console.log('Archivo enviado con éxito', response.data);
+      return response.data;
+    } else {
+      console.error('Error al enviar el archivo', response);
+    }
+  } catch (error) {
+    console.error('Error en la solicitud', error);
+  }
+};
+
+
 const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
     const byteCharacters = atob(b64Data);
     const byteArrays = [];
@@ -58,6 +91,7 @@ const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
     return blob;
 }
 
+
 const PantallaPlantas = ({ route }) => {
     const [hasGalleryPermission, setHasGalleryPermission] = useState(null); // Usa esto para controlar la visualización del mensaje de éxito
     const [image, setImage] = useState(null); // Usa esto para guardar la imagen seleccionada [1
@@ -69,7 +103,6 @@ const PantallaPlantas = ({ route }) => {
         })();
     }, []);
 
-
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -78,32 +111,25 @@ const PantallaPlantas = ({ route }) => {
             quality: 1,
             base64: true,
         });
-
+    
         if (result.cancelled) {
             return;
         }
-
+    
         setImage(result.assets[0].base64);
-
+    
         const imageBlob = b64toBlob(result.assets[0].base64, 'image/jpeg');
-
         const file = new File([imageBlob], 'image.jpg', { type: 'image/jpeg' });
-
-        const formData = new FormData();
-
-        formData.append('file', file);
-        formData.append('planta', route.params.plantaNombre.toLowerCase());
-
-        try {
-            const response = await axios.post('http://192.168.100.132:5000/predict/', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-        } catch (error) {
-            console.error('Error al enviar la imagen:', error);
+    
+        if (!file) {
+            alert('Please select a file first!');
+            return;
         }
+
+        const response = await sendFileToAPI(result.assets[0].uri, 'banana');
     };
+
+
 
     const { plantaNombre } = route.params;
     const planta = plantas.find(p => p.name === plantaNombre);
@@ -146,9 +172,9 @@ const PantallaPlantas = ({ route }) => {
 
                             </TouchableOpacity>
                             <Image
-                                source={{ uri: 'data:image/jpeg;base64,' + image }}
-                                style={{ width: 200, height: 200 }}
-                            />
+                                                            source={{ uri: 'data:image/jpeg;base64,' + image }}
+                                                            style={{ width: 200, height: 200 }}
+/>
                         </View>
                     </View>
                 </ScrollView>
