@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+
 import {
     View,
     Text,
@@ -14,6 +15,8 @@ import { encode as atob } from 'base-64';
 import axios from 'axios';
 
 
+
+
 const { height } = Dimensions.get('window');
 
 const plantas = [
@@ -22,53 +25,42 @@ const plantas = [
         name: 'Mango',
         image: require('../assets/avatars/mango.png'),
         backgroundColor: "#DCE7D6",
+        familia: "Anacardiaceae",
+        enfermedadesInfo: `
+            - Die back (Marchitez): Una enfermedad que causa el marchitamiento y muerte de las ramas, causada por diversos factores como hongos, bacterias o estrés ambiental.
+            - Powdery Mildew (Oídio): Una enfermedad fúngica que forma un polvo blanco en las hojas y brotes nuevos, afectando la salud de la planta.
+            - Anthracnose (Antracnosis): Otra enfermedad fúngica que causa manchas necróticas en las hojas y frutos del mango, disminuyendo la producción y calidad.
+        `
     },
     {
         id: 2,
         name: 'Banana',
         image: require('../assets/avatars/banana.png'),
         backgroundColor: "#fdf9c4",
+        familia: "Musaceae",
+        enfermedadesInfo: `
+            - Cordana (Mancha de Cordana): Una enfermedad fúngica que afecta las hojas del banano, causando manchas amarillas y necrosis.
+            - Sigatoka (Sigatoka Negra): Otra enfermedad fúngica que causa manchas negras en las hojas, reduciendo la fotosíntesis y debilitando la planta.
+            - Pestalotiopsis (Mancha Roja): Una enfermedad fúngica que causa manchas rojizas en las hojas y tallos, debilitando la planta.
+        `
     },
     {
         id: 3,
         name: 'Tomate',
         image: require('../assets/avatars/tomate.png'),
         backgroundColor: "#fabfb7",
-    },
+        familia: "Solanaceae",
+        enfermedadesInfo: `
+            - Powdery Mildew (Oídio): Al igual que en el mango, esta enfermedad fúngica afecta las hojas y brotes del tomate, formando un polvo blanco que reduce la fotosíntesis.
+            - Early Blight (Tizón Temprano): Una enfermedad fúngica que provoca manchas oscuras en las hojas inferiores del tomate, extendiéndose gradualmente y afectando la planta en general.
+        `
+    }
 ];
 
 
-const sendFileToAPI = async (selectedFileUri, planta) => {
 
-  const formData = new FormData();
-  
-  formData.append('file', {
-    uri: selectedFileUri,
-    type: 'image/jpeg', 
-    name: 'photo.jpg', 
-  });
-  formData.append('planta', planta);
 
-  try {
-    const response = await axios({
-      method: 'post',
-      url: 'http://192.168.100.132:8000/predict/', // Asegúrate de que la URL es correcta y apunta al endpoint adecuado
-      data: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data', // Esto es importante para el correcto procesamiento del archivo en el servidor
-      },
-    });
 
-    if (response.status === 200) {
-      console.log('Archivo enviado con éxito', response.data);
-      return response.data;
-    } else {
-      console.error('Error al enviar el archivo', response);
-    }
-  } catch (error) {
-    console.error('Error en la solicitud', error);
-  }
-};
 
 
 const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
@@ -93,8 +85,44 @@ const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
 
 
 const PantallaPlantas = ({ route }) => {
-    const [hasGalleryPermission, setHasGalleryPermission] = useState(null); // Usa esto para controlar la visualización del mensaje de éxito
-    const [image, setImage] = useState(null); // Usa esto para guardar la imagen seleccionada [1
+
+    const [hasGalleryPermission, setHasGalleryPermission] = useState(null);
+    const [image, setImage] = useState(null);
+    const [porcentaje, setPorcentaje] = useState("0%"); // Aquí declaras el estado del porcentaje
+    const [enfermedadDetectada, setEnfermedadDetectada] = useState("Enfermedad Detectada"); // Aquí declaras el estado de la enfermedad detectada
+
+
+    const sendFileToAPI = async (selectedFileUri, planta) => {
+        const formData = new FormData();
+        formData.append('file', {
+            uri: selectedFileUri,
+            type: 'image/jpeg',
+            name: 'photo.jpg',
+        });
+        formData.append('planta', planta);
+
+        try {
+            const response = await axios({
+                method: 'post',
+                url: 'http://192.168.100.132:8000/predict/',
+                data: formData,
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.status === 200) {
+                console.log('Archivo enviado con éxito', response.data);
+                const { confianza, enfermedad } = response.data;
+                setPorcentaje(`${(confianza * 100).toFixed(2)}%`);
+                setEnfermedadDetectada(enfermedad);
+            } else {
+                console.error('Error al enviar el archivo', response);
+            }
+        } catch (error) {
+            console.error('Error en la solicitud', error);
+        }
+    };
 
     useEffect(() => {
         (async () => {
@@ -102,6 +130,7 @@ const PantallaPlantas = ({ route }) => {
             setHasGalleryPermission(galleryStatus.status === 'granted');
         })();
     }, []);
+
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -111,22 +140,24 @@ const PantallaPlantas = ({ route }) => {
             quality: 1,
             base64: true,
         });
-    
+
         if (result.cancelled) {
             return;
         }
-    
+
         setImage(result.assets[0].base64);
-    
+
+
+
         const imageBlob = b64toBlob(result.assets[0].base64, 'image/jpeg');
         const file = new File([imageBlob], 'image.jpg', { type: 'image/jpeg' });
-    
+
         if (!file) {
             alert('Please select a file first!');
             return;
         }
-
-        const response = await sendFileToAPI(result.assets[0].uri, 'banana');
+        const response = await sendFileToAPI(result.assets[0].uri, plantaNombre.toLowerCase());
+        console.log(plantaNombre);
     };
 
 
@@ -134,47 +165,55 @@ const PantallaPlantas = ({ route }) => {
     const { plantaNombre } = route.params;
     const planta = plantas.find(p => p.name === plantaNombre);
 
+
+
+
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
             <View style={styles.container}>
-
                 <View style={[styles.header, { backgroundColor: planta ? planta.backgroundColor : '#DCE7D6' }]}>
                     <View style={styles.headerContent}>
                         <Text style={[styles.text, styles.headerText]}>{plantaNombre}</Text>
-                        <Text style={styles.text}>Tipo:</Text>
-                        <Text style={styles.text}>Tipo Planta:</Text>
+                        {planta && (
+                            <>
+                                <Text style={styles.text}>Familia: </Text>
+                                <Text style={[styles.text, styles.familyText]}>{planta.familia}</Text>
+                            </>
+                        )}
                     </View>
                     {planta && (
                         <Image source={planta.image} style={styles.plantaImage} />
                     )}
                 </View>
-                <ScrollView >
+                <ScrollView>
                     <View style={styles.informationContainer}>
                         <Text style={styles.informationTitle}>Información</Text>
                         <View style={styles.genericTextContainer}>
-                            <Text style={[styles.genericText, styles.justifyText]}>
-                                La banana es un pilar clave de la economía ecuatoriana, siendo uno de los principales productos de exportación del país. Cultivada principalmente en las regiones costeras como El Oro y Los Ríos, Ecuador destaca por sus variedades de alta calidad, como el Cavendish "Gran Enano" y el "Valery". Este cultivo no solo genera empleo en áreas rurales, sino que también impulsa el crecimiento económico nacional gracias a su demanda global.
-                            </Text>
+                            {planta && planta.enfermedadesInfo.split('\n').map((info, index) => (
+                                <Text key={index} style={[styles.genericText, styles.justifyText]}>
+                                    {info.trim()}
+                                </Text>
+                            ))}
                         </View>
+
                         <View style={styles.percentageContainer}>
-                            <Text style={styles.percentageText}>50%</Text>
+                            <Text style={styles.percentageText}>{porcentaje}</Text>
                         </View>
                         <View style={styles.diseasesContainer}>
-                            <Text style={styles.diseaseTitle}>Enfermedad Detectada</Text>
-                        </View>
-                        <View style={styles.predictionContainer}>
-                            <Text style={styles.predictionTitle}>Recomendaciones:</Text>
-                            <Text style={styles.detectedDiseaseTitle}>Enfermedad Dectectada</Text>
+                            <Text style={styles.diseaseTitle}>{enfermedadDetectada}</Text>
                         </View>
                         <View style={styles.buttonContainer}>
                             <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
                                 <Text style={styles.photoButtonText}>Elegir Foto</Text>
-
                             </TouchableOpacity>
-                            <Image
-                                                            source={{ uri: 'data:image/jpeg;base64,' + image }}
-                                                            style={{ width: 200, height: 200 }}
-/>
+                            {image && (
+                                <View>
+                                    <Image
+                                        source={{ uri: 'data:image/jpeg;base64,' + image }}
+                                        style={styles.selectedImage}
+                                    />
+                                </View>
+                            )}
                         </View>
                     </View>
                 </ScrollView>
@@ -224,6 +263,23 @@ const styles = StyleSheet.create({
         color: '#333',
         marginBottom: 5,
     },
+    familyText: {
+        fontWeight: 'bold', // Puedes ajustar los estilos según tus preferencias
+        fontStyle: 'italic',
+        color: '#333', // Color deseado
+    },
+    selectedImage: {
+        width: 200,
+        height: 200,
+        borderRadius: 100, // Hace la imagen circular
+        borderWidth: 2,
+        borderColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        marginBottom: 20,
+    },
     plantaImage: {
         width: 120,
         height: 120,
@@ -234,14 +290,17 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     informationContainer: {
-        padding: 20,
+        padding: 20, // Considera reducir este valor si es necesario
         justifyContent: 'space-between',
-
     },
     informationTitle: {
         fontSize: 17,
         fontWeight: 'bold',
-        marginBottom: 20,
+        marginBottom: -10, // Valor reducido para disminuir espacio
+    },
+    genericText: {
+        textAlign: 'justify',
+        lineHeight: 20, // Ajusta este valor según necesites
     },
     diseasesContainer: {
         flexDirection: 'row',
@@ -278,6 +337,7 @@ const styles = StyleSheet.create({
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
+        marginBottom: 20,
     },
     photoButtonText: {
         fontSize: 20,
@@ -295,15 +355,13 @@ const styles = StyleSheet.create({
         textAlign: 'center',
 
     },
-    genericText: {
-        textAlign: 'justify',
-    },
+
     justifyText: {
         textAlign: 'justify',
     },
     genericTextContainer: {
         flex: 1,
-        marginBottom: 20,
+        marginBottom: 10,
     },
     scrollView: {
         flex: 1,
