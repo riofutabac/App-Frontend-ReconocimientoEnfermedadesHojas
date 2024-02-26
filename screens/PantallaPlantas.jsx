@@ -15,8 +15,6 @@ import { encode as atob } from 'base-64';
 import axios from 'axios';
 
 
-
-
 const { height } = Dimensions.get('window');
 
 const plantas = [
@@ -56,11 +54,6 @@ const plantas = [
         `
     }
 ];
-
-
-
-
-
 
 
 const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
@@ -185,6 +178,7 @@ const PantallaPlantas = ({ route }) => {
                         <Image source={planta.image} style={styles.plantaImage} />
                     )}
                 </View>
+
                 <ScrollView>
                     <View style={styles.informationContainer}>
                         <Text style={styles.informationTitle}>Información</Text>
@@ -255,18 +249,21 @@ const styles = StyleSheet.create({
     },
     headerContent: {
         flex: 1,
-        paddingTop: 20,
+        justifyContent: 'center', 
+        paddingTop: 5, 
     },
+    
     headerText: {
-        fontSize: 32,
+        fontSize: 36, 
         fontWeight: 'bold',
         color: '#333',
-        marginBottom: 5,
+        marginBottom: 30, 
     },
     familyText: {
         fontWeight: 'bold', // Puedes ajustar los estilos según tus preferencias
         fontStyle: 'italic',
         color: '#333', // Color deseado
+        fontSize: 18,
     },
     selectedImage: {
         width: 200,
@@ -281,8 +278,8 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     plantaImage: {
-        width: 120,
-        height: 120,
+        width: 200,
+        height: 300,
         resizeMode: 'contain',
     },
     text: {
