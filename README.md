@@ -1,6 +1,6 @@
 
 
-# Nombre de la Aplicación
+# Doctor Planta
 
 ## Descripción
 Este proyecto es una aplicación de reconocimiento de enfermedades en hojas de plantas que ayuda a identificar problemas comunes en tomates, bananos y mangos. Utiliza tecnología de visión por computadora y aprendizaje automático para analizar imágenes de hojas, facilitando un diagnóstico rápido y eficiente de las enfermedades.
